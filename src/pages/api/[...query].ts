@@ -3,8 +3,32 @@ import { Client } from "genius-lyrics";
 
 const nullishQueries = ["None", "N/A", "null", "undefined"];
 
+// RapidAPI secret (store this securely, e.g., as an environment variable)
+const RAPIDAPI_PROXY_SECRET = process.env.RAPIDAPI_PROXY_SECRET;
+
+// List of RapidAPI IP addresses (keep this updated)
+const RAPIDAPI_IPS = [
+  '52.5.229.222',
+  '54.165.128.88',
+  '54.221.78.73',
+  '54.173.35.199'
+  // Add more IP addresses as provided by RapidAPI
+];
+
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
+    // Check the X-RapidAPI-Proxy-Secret header
+    const rapidApiSecret = req.headers['x-rapidapi-proxy-secret'];
+    if (rapidApiSecret !== RAPIDAPI_PROXY_SECRET) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Optionally, check if the request is coming from a RapidAPI IP
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    if (typeof clientIp === 'string' && !RAPIDAPI_IPS.includes(clientIp.split(',')[0])) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const client = new Client();
     if (req.method === "GET") {
       const { query } = req.query;
@@ -30,7 +54,6 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
           );
           res.setHeader("Content-Type", "application/json");
           res.setHeader("Access-Control-Allow-Origin", "*");
-
           return res.status(200).json({
             lyrics: lyrics,
             title: song?.title,
@@ -41,7 +64,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
             image: song?.image,
           });
         } catch (error) {
-          console.log(error);
+          console.error(error);
           return res.status(404).json({ error: "Lyrics not found" });
         }
       } else {
@@ -51,7 +74,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       return res.status(405).json({ error: "Method not allowed" });
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
