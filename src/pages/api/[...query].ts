@@ -6,18 +6,14 @@ const nullishQueries = ["None", "N/A", "null", "undefined"];
 // RapidAPI secret (store this securely, e.g., as an environment variable)
 const RAPIDAPI_PROXY_SECRET = process.env.RAPIDAPI_PROXY_SECRET;
 
-// Note: IP check temporarily removed for testing
-
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   try {
-    // Check the X-RapidAPI-Proxy-Secret header
+    // Strict check for X-RapidAPI-Proxy-Secret header
     const rapidApiSecret = req.headers['x-rapidapi-proxy-secret'];
-    if (rapidApiSecret !== RAPIDAPI_PROXY_SECRET) {
+    if (typeof rapidApiSecret !== 'string' || rapidApiSecret !== RAPIDAPI_PROXY_SECRET) {
+      console.log('Unauthorized access attempt');
       return res.status(401).json({ error: "Unauthorized" });
     }
-
-    // IP check removed for testing purposes
-    // TODO: Re-enable IP check before deploying to production
 
     const client = new Client();
     if (req.method === "GET") {
