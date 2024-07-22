@@ -25,7 +25,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
 
     // Optionally, check if the request is coming from a RapidAPI IP
     const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    if (typeof clientIp === 'string' && !RAPIDAPI_IPS.includes(clientIp.split(',')[0])) {
+    const ipToCheck = Array.isArray(clientIp) ? clientIp[0] : clientIp?.split(',')[0];
+    
+    if (ipToCheck && !RAPIDAPI_IPS.includes(ipToCheck)) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
